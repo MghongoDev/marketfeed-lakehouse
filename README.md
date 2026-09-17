@@ -2,7 +2,7 @@
 
 A production-grade medallion-architecture data lakehouse demonstrating modern data engineering practices: incremental loading, SCD Type 2 dimension tracking, dbt transformations, and layered data quality testing.
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────┐     ┌──────────────┐     ┌─────────────────────────────────┐
@@ -32,7 +32,7 @@ A production-grade medallion-architecture data lakehouse demonstrating modern da
   - `sector_performance` - Daily aggregated returns by sector (point-in-time-correct joins)
   - `macro_market_correlation` - Market returns with macro indicators (as-of joins)
 
-## 🎯 Key Design Decisions
+## Key Design Decisions
 
 ### Why land raw JSON in bronze?
 Bronze is the source of truth. If a downstream bug is discovered, we can reprocess without re-calling rate-limited APIs. This design trades storage for resilience.
@@ -49,7 +49,7 @@ dbt's built-in snapshot feature implements SCD Type 2 correctly (validity window
 ### Why point-in-time joins in sector_performance?
 Historical sector classifications must match the date of the price data — not today's classification. The PIT join ensures we use the sector that was actually true on each historical date by matching against SCD2 validity windows.
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -99,7 +99,7 @@ dbt docs serve --port 8081
 
 Visit http://localhost:8081 to explore the interactive lineage graph and model documentation.
 
-## 📊 Data Model
+## Data Model
 
 ### Bronze Tables (Raw)
 - `daily_prices_raw` — One row per API response with JSON blob + ingestion metadata
@@ -136,7 +136,7 @@ dbt test
 python great_expectations/checks/freshness_check.py
 ```
 
-## 🔄 CI/CD
+## CI/CD
 
 GitHub Actions pipeline automatically:
 1. Runs unit tests on ingestion scripts
@@ -147,7 +147,7 @@ GitHub Actions pipeline automatically:
 
 See `.github/workflows/ci.yml` for details.
 
-## 📈 What I'd Do Differently at Scale
+## What I'd Do Differently at Scale
 
 1. **Storage:** Move from file-based DuckDB to Snowflake/BigQuery with proper table formats (Iceberg/Delta)
 2. **Deduplication:** Replace window function dedup with MERGE-based upsert to avoid full-table scans
@@ -156,7 +156,7 @@ See `.github/workflows/ci.yml` for details.
 5. **Partitioning:** Partition silver/gold tables by date for query performance
 6. **Observability:** Add dbt exposures, pipeline run logs, and Slack alerting on failures
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Ingestion:** Python (requests, pandas, pyarrow)
 - **Storage:** Local files (Parquet) + DuckDB
@@ -166,7 +166,7 @@ See `.github/workflows/ci.yml` for details.
 - **CI/CD:** GitHub Actions
 - **IaC:** Terraform (ready for cloud deployment)
 
-## 📝 Project Structure
+## Project Structure
 
 ```
 marketfeed_lakehouse/
@@ -220,7 +220,7 @@ Runtime data and generated files are intentionally not part of the source tree:
 `dbt/dbt_packages/`, `dbt/logs/`, virtual environments, and Python caches are
 created locally or by the build process and are excluded by `.gitignore`.
 
-## 📚 Learning Resources
+## Learning Resources
 
 This project demonstrates:
 - ✅ Medallion architecture (bronze/silver/gold)
@@ -233,11 +233,11 @@ This project demonstrates:
 - ✅ CI/CD for data pipelines
 - ✅ Infrastructure as Code
 
-## 📄 License
+## License
 
 MIT License - See LICENSE file for details
 
-## 🤝 Contributing
+## Contributing
 
 This is a portfolio project, but feedback and suggestions are welcome via issues or PRs.
 
