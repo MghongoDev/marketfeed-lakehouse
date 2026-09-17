@@ -29,13 +29,16 @@
 with bronze_raw as (
 
     {%- for partition in partitions %}
-    {%- if not loop.first %}    union all
-    {%- endif %}
-    select
-        ticker,
-        to_json(raw_payload) as raw_payload,
-        ingested_at
-    from read_parquet('../data/bronze/daily_prices_raw/ingest_date={{ partition }}/**/*.parquet', hive_partitioning=1)
+        {%- if not loop.first %}    union all
+        {%- endif %}
+        select
+            ticker,
+            to_json(raw_payload) as raw_payload,
+            ingested_at
+        from
+            read_parquet(
+                '../data/bronze/daily_prices_raw/ingest_date={{ partition }}/**/*.parquet', hive_partitioning = 1
+            )
     {%- endfor %}
 
 ),
@@ -63,28 +66,28 @@ parsed as (
                 '$."' || trade_date_str || '"'
             ),
             '$."1. open"'
-        ) as decimal(18,4)) as open_price,
+        ) as decimal(18, 4)) as open_price,
         cast(json_extract_string(
             json_extract(
                 json_extract(raw_payload, '$."Time Series (Daily)"'),
                 '$."' || trade_date_str || '"'
             ),
             '$."2. high"'
-        ) as decimal(18,4)) as high_price,
+        ) as decimal(18, 4)) as high_price,
         cast(json_extract_string(
             json_extract(
                 json_extract(raw_payload, '$."Time Series (Daily)"'),
                 '$."' || trade_date_str || '"'
             ),
             '$."3. low"'
-        ) as decimal(18,4)) as low_price,
+        ) as decimal(18, 4)) as low_price,
         cast(json_extract_string(
             json_extract(
                 json_extract(raw_payload, '$."Time Series (Daily)"'),
                 '$."' || trade_date_str || '"'
             ),
             '$."4. close"'
-        ) as decimal(18,4)) as close_price,
+        ) as decimal(18, 4)) as close_price,
         cast(json_extract_string(
             json_extract(
                 json_extract(raw_payload, '$."Time Series (Daily)"'),
@@ -101,7 +104,8 @@ deduped as (
 
     -- Keep only the most recently ingested value per (ticker, trade_date)
     -- This handles the case where Alpha Vantage returns overlapping data across days
-    select *,
+    select
+        *,
         row_number() over (
             partition by ticker, trade_date
             order by ingested_at desc

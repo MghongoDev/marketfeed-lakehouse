@@ -14,7 +14,7 @@
 
 with bronze_raw as (
 
-    select * from read_parquet('../data/bronze/fred_series_raw/**/*.parquet', hive_partitioning=1)
+    select * from read_parquet('../data/bronze/fred_series_raw/**/*.parquet', hive_partitioning = 1)
 
 ),
 
@@ -24,7 +24,7 @@ unnested as (
         series_id,
         cast(ingested_at as timestamp) as ingested_at,
         -- Unnest the observations array (cast JSON to JSON[] for DuckDB)
-        unnest(cast(json_extract(raw_payload, '$.observations') as json[])) as observation
+        unnest(cast(json_extract(raw_payload, '$.observations') as json [])) as observation
     from bronze_raw
 
 ),
@@ -47,17 +47,18 @@ typed as (
     select
         series_id,
         observation_date,
-        cast(value_str as decimal(18,4)) as value,
+        cast(value_str as decimal(18, 4)) as value,
         ingested_at
     from parsed
-    where try_cast(value_str as decimal(18,4)) is not null
+    where try_cast(value_str as decimal(18, 4)) is not null
 
 ),
 
 deduped as (
 
     -- Keep most recent ingestion per (series_id, observation_date)
-    select *,
+    select
+        *,
         row_number() over (
             partition by series_id, observation_date
             order by ingested_at desc

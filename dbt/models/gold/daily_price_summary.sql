@@ -79,7 +79,6 @@ select
     -- Daily return as percentage
     case
         when prev_close is not null and prev_close > 0
-        then ((close_price - prev_close) / prev_close) * 100
-        else null
+            then ((close_price - prev_close) / prev_close) * 100
     end as daily_return_pct
 from with_rolling_metrics

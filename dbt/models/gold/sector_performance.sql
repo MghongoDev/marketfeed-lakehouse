@@ -36,12 +36,13 @@ joined as (
         p.close_price,
         p.daily_return_pct,
         p.volume
-    from prices p
-    inner join company c
+    from prices as p
+    inner join company as c
         -- Point-in-time join: match trade_date against SCD2 validity window
-        on p.ticker = c.ticker
-        and p.trade_date >= cast(c.valid_from as date)
-        and p.trade_date < cast(c.valid_to as date)
+        on
+            p.ticker = c.ticker
+            and p.trade_date >= cast(c.valid_from as date)
+            and p.trade_date < cast(c.valid_to as date)
 
 )
 
@@ -56,4 +57,4 @@ select
     max(close_price) as max_close_price
 from joined
 group by trade_date, sector
-order by trade_date desc, sector
+order by trade_date desc, sector asc

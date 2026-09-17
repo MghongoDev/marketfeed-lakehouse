@@ -50,12 +50,12 @@ select
     mc.unemployment_rate,
     mc.gdp,
     mc.observation_date as macro_observation_date
-from market m
-left join macro mc
+from market as m
+left join macro as mc
     -- As-of join: get the most recent macro observation prior to trade_date
     on mc.observation_date = (
-        select max(observation_date)
-        from macro
-        where observation_date <= m.trade_date
+        select max(macro_observations.observation_date)
+        from macro as macro_observations
+        where macro_observations.observation_date <= m.trade_date
     )
 order by m.trade_date desc
