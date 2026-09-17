@@ -115,7 +115,7 @@ Visit http://localhost:8081 to explore the interactive lineage graph and model d
 - `sector_performance` — Daily aggregated returns by sector
 - `macro_market_correlation` — Market-wide returns with macro context
 
-## 🧪 Testing
+## Testing
 
 ### Unit Tests (Ingestion)
 
@@ -223,15 +223,15 @@ created locally or by the build process and are excluded by `.gitignore`.
 ## Learning Resources
 
 This project demonstrates:
-- ✅ Medallion architecture (bronze/silver/gold)
-- ✅ Incremental loading patterns
-- ✅ SCD Type 2 with dbt snapshots
-- ✅ Point-in-time-correct joins
-- ✅ As-of joins for time-series correlation
-- ✅ Idempotent ingestion design
-- ✅ Layered data quality (dbt + GE)
-- ✅ CI/CD for data pipelines
-- ✅ Infrastructure as Code
+- Medallion architecture (bronze/silver/gold)
+- Incremental loading patterns
+- SCD Type 2 with dbt snapshots
+- Point-in-time-correct joins
+- As-of joins for time-series correlation
+- Idempotent ingestion design
+- Layered data quality (dbt + GE)
+- CI/CD for data pipelines
+- Infrastructure as Code
 
 ## License
 
