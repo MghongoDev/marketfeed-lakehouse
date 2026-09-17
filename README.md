@@ -107,7 +107,7 @@ Visit http://localhost:8081 to explore the interactive lineage graph and model d
 
 ### Silver Tables (Cleaned)
 - `stg_stock_prices` — Grain: one row per (ticker, trade_date)
-- `stg_macro_indicators` — Grain: one row per (series_id, observation_date)  
+- `stg_macro_indicators` — Grain: one row per (series_id, observation_date)
 - `dim_company` — SCD Type 2, grain: one row per (ticker, valid_from, valid_to)
 
 ### Gold Tables (Marts)

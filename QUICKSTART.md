@@ -82,14 +82,14 @@ dbt test --select gold
 
 # Query a gold table
 duckdb ../data/marketfeed.duckdb "
-SELECT 
-    ticker, 
-    trade_date, 
-    close_price, 
-    ma_7d, 
+SELECT
+    ticker,
+    trade_date,
+    close_price,
+    ma_7d,
     daily_return_pct
-FROM daily_price_summary 
-ORDER BY trade_date DESC, ticker 
+FROM daily_price_summary
+ORDER BY trade_date DESC, ticker
 LIMIT 10
 "
 ```
@@ -131,7 +131,7 @@ Expected output: `9 passed`
 
 ### Example: Daily Price Summary
 ```sql
-SELECT 
+SELECT
     ticker,
     trade_date,
     close_price,
@@ -147,7 +147,7 @@ LIMIT 10;
 
 ### Example: Sector Performance
 ```sql
-SELECT 
+SELECT
     trade_date,
     sector,
     num_companies,
@@ -159,7 +159,7 @@ ORDER BY trade_date DESC, avg_daily_return_pct DESC;
 
 ### Example: Macro Correlation
 ```sql
-SELECT 
+SELECT
     trade_date,
     market_avg_return,
     fed_funds_rate,
@@ -173,7 +173,7 @@ LIMIT 10;
 ### Example: SCD Type 2 History
 ```sql
 -- Show company history with validity windows
-SELECT 
+SELECT
     ticker,
     company_name,
     sector,
