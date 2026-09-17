@@ -44,10 +44,14 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dbt
+      - name: Install dbt and fixture dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install dbt-core dbt-duckdb
+          python -m pip install \
+            dbt-core \
+            dbt-duckdb \
+            pandas==2.2.3 \
+            pyarrow==25.0.1
 
       - name: Generate sample bronze data
         run: |
@@ -89,10 +93,17 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install sqlfluff
+      - name: Install SQLFluff and dbt
         run: |
-          pip install sqlfluff sqlfluff-templater-dbt
+          python -m pip install --upgrade pip
+          python -m pip install \
+            sqlfluff \
+            sqlfluff-templater-dbt \
+            dbt-core \
+            dbt-duckdb
 
       - name: Lint SQL
+        working-directory: dbt
         run: |
-          sqlfluff lint dbt/models --dialect duckdb --exclude-rules L034,L029
+          dbt deps
+          sqlfluff lint models --dialect duckdb --exclude-rules L034,L029
