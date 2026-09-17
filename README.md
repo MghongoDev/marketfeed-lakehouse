@@ -32,6 +32,16 @@ A production-grade medallion-architecture data lakehouse demonstrating modern da
   - `sector_performance` - Daily aggregated returns by sector (point-in-time-correct joins)
   - `macro_market_correlation` - Market returns with macro indicators (as-of joins)
 
+## Data Sources
+
+This lakehouse ingests data from the following external and internal sources:
+
+- **Alpha Vantage** — daily stock market data for equities using the `TIME_SERIES_DAILY` endpoint. The ingestion layer fetches raw OHLCV history for ticker symbols such as `AAPL`, `MSFT`, and `GOOGL` and lands the response to the bronze layer.
+- **FRED (Federal Reserve Economic Data)** — macroeconomic series pulled from the `fred/series/observations` API. The project tracks indicators including `CPIAUCSL`, `UNRATE`, `FEDFUNDS`, and `GDP` to join market performance with macroeconomic context.
+- **Company metadata seed** — static corporate attributes loaded from `dbt/seeds/company_metadata.csv`, including ticker, company name, sector, industry, and exchange metadata used for dimension and classification logic.
+
+These sources are orchestrated through the ingestion modules in `ingestion/alpha_vantage.py` and `ingestion/fred.py`, and then transformed into the bronze → silver → gold medallion pipeline.
+
 ## Key Design Decisions
 
 ### Why land raw JSON in bronze?
