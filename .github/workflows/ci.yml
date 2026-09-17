@@ -100,7 +100,17 @@ jobs:
             sqlfluff \
             sqlfluff-templater-dbt \
             dbt-core \
-            dbt-duckdb
+            dbt-duckdb \
+            pandas==2.2.3 \
+            pyarrow==25.0.1
+
+      - name: Generate sample bronze data
+        run: |
+          python scripts/seed_ci_fixtures.py
+
+      - name: Install dbt packages
+        working-directory: dbt
+        run: dbt deps
 
       - name: Lint SQL
         working-directory: dbt
