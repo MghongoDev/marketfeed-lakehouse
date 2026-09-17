@@ -1,0 +1,34 @@
+# Core Airflow - Python 3.14-compatible release
+apache-airflow==3.3.1
+
+# dbt and database adapters
+dbt-core==1.12.3
+dbt-duckdb==1.11.0
+duckdb==1.5.5
+
+# Data processing
+pandas==2.2.3
+# Python 3.14 support requires a recent pyarrow wheel; 17.0.0 fails to build
+pyarrow==25.0.1
+deltalake==0.20.2
+
+# API and utilities
+requests==2.32.3
+python-dotenv>=1.2
+
+# Data quality
+# Great Expectations 1.x requires Python <3.14; use the latest 0.18.x release
+# that remains compatible with the project stack.
+great-expectations==0.18.22
+
+# Testing
+pytest==8.3.3
+responses==0.25.3
+
+# SQL linting
+sqlfluff==3.2.5
+sqlfluff-templater-dbt==3.2.5
+
+# MinIO/S3 client
+boto3==1.35.20
+minio==7.2.9
