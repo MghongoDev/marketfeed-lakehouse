@@ -183,14 +183,11 @@ marketfeed_lakehouse/
 ├── .env.example             # Environment-variable template; copy to .env locally
 ├── .github/workflows/ci.yml # GitHub Actions: tests, dbt build, and SQL linting
 ├── .gitignore                # Local secrets, data, caches, and build artifacts
-├── BUILD_STATUS.md           # Implementation and build status
 ├── LICENSE                   # MIT license
 ├── QUICKSTART.md             # Detailed end-to-end runbook
 ├── README.md                 # Project overview and usage
 ├── docker-compose.yml        # Optional MinIO and PostgreSQL services
 ├── requirements.txt          # Python, Airflow, dbt, testing, and quality dependencies
-├── marketfeed-lakehouse-implementation-guide.md
-│                             # Detailed implementation guide
 ├── dags/                     # Airflow orchestration
 │   ├── marketfeed_bronze_dag.py
 │   └── marketfeed_dbt_dag.py
