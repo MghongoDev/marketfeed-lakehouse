@@ -24,7 +24,7 @@ unnested as (
         series_id,
         cast(ingested_at as timestamp) as ingested_at,
         -- Unnest the observations array (cast JSON to JSON[] for DuckDB)
-        unnest(cast(json_extract(raw_payload, '$.observations') as json [])) as observation
+        unnest(cast(json_extract(raw_payload, '$.observations') as json[])) as observation
     from bronze_raw
 
 ),
