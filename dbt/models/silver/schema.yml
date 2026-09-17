@@ -1,0 +1,72 @@
+version: 2
+
+models:
+  - name: stg_stock_prices
+    description: |
+      Deduplicated daily stock price data, one row per ticker/trade_date.
+
+      This is the cleaned version of bronze daily_prices_raw. JSON is parsed,
+      types are enforced, and duplicates from overlapping API calls are removed
+      by keeping the most recent ingestion.
+    columns:
+      - name: ticker
+        description: "Stock ticker symbol (e.g., AAPL, MSFT)"
+        tests:
+          - not_null
+      - name: trade_date
+        description: "Trading date"
+        tests:
+          - not_null
+      - name: open_price
+        description: "Opening price for the trading day"
+        tests:
+          - not_null
+      - name: high_price
+        description: "Highest price during the trading day"
+        tests:
+          - not_null
+      - name: low_price
+        description: "Lowest price during the trading day"
+        tests:
+          - not_null
+      - name: close_price
+        description: "Closing price for the trading day"
+        tests:
+          - not_null
+      - name: volume
+        description: "Trading volume (number of shares)"
+        tests:
+          - not_null
+      - name: last_updated_at
+        description: "When this record was last updated (from ingestion timestamp)"
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - ticker
+            - trade_date
+
+  - name: stg_macro_indicators
+    description: |
+      Deduplicated macroeconomic indicator observations from FRED.
+
+      Grain: one row per (series_id, observation_date)
+    columns:
+      - name: series_id
+        description: "FRED series identifier (e.g., CPIAUCSL, UNRATE)"
+        tests:
+          - not_null
+      - name: observation_date
+        description: "Date of the observation"
+        tests:
+          - not_null
+      - name: value
+        description: "Observed value for the indicator"
+        tests:
+          - not_null
+      - name: last_updated_at
+        description: "When this record was last updated"
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - series_id
+            - observation_date

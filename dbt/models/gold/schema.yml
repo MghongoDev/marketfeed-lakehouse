@@ -1,0 +1,69 @@
+version: 2
+
+models:
+  - name: daily_price_summary
+    description: |
+      Daily stock prices enriched with rolling technical indicators.
+
+      This mart is the foundation for most price-based analysis. It includes
+      moving averages and volatility calculations commonly used in financial analysis.
+    columns:
+      - name: ticker
+        description: "Stock ticker symbol"
+        tests:
+          - not_null
+      - name: trade_date
+        description: "Trading date"
+        tests:
+          - not_null
+      - name: close_price
+        description: "Closing price"
+        tests:
+          - not_null
+      - name: ma_7d
+        description: "7-day moving average of closing price"
+      - name: ma_30d
+        description: "30-day moving average of closing price"
+      - name: volatility_30d
+        description: "30-day rolling standard deviation (volatility measure)"
+      - name: daily_return_pct
+        description: "Daily return as percentage"
+
+  - name: sector_performance
+    description: |
+      Aggregated daily performance by sector.
+
+      Uses point-in-time-correct SCD Type 2 joins to ensure historical accuracy.
+      If a company changed sectors, it's counted under the sector it belonged to
+      on that specific date.
+    columns:
+      - name: trade_date
+        description: "Trading date"
+        tests:
+          - not_null
+      - name: sector
+        description: "Market sector"
+        tests:
+          - not_null
+      - name: num_companies
+        description: "Number of companies in this sector on this date"
+      - name: avg_daily_return_pct
+        description: "Average daily return across sector companies"
+
+  - name: macro_market_correlation
+    description: |
+      Market-wide returns with macroeconomic context.
+
+      Demonstrates as-of join pattern: macro indicators (monthly/quarterly)
+      are matched to daily market data by taking the most recent prior observation.
+    columns:
+      - name: trade_date
+        description: "Trading date"
+        tests:
+          - not_null
+      - name: market_avg_return
+        description: "Average return across all tracked stocks"
+      - name: fed_funds_rate
+        description: "Federal funds rate (as-of join)"
+      - name: unemployment_rate
+        description: "Unemployment rate (as-of join)"

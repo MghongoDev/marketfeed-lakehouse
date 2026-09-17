@@ -1,0 +1,11 @@
+ticker,company_name,sector,exchange,effective_date
+AAPL,Apple Inc.,Technology,NASDAQ,2026-08-01
+MSFT,Microsoft Corp.,Technology,NASDAQ,2026-08-01
+GOOGL,Alphabet Inc.,Communication Services,NASDAQ,2026-08-01
+AMZN,Amazon.com Inc.,Consumer Discretionary,NASDAQ,2026-08-01
+NVDA,NVIDIA Corp.,Technology,NASDAQ,2026-08-01
+TSLA,Tesla Inc.,Consumer Discretionary,NASDAQ,2026-08-01
+META,Meta Platforms Inc.,Communication Services,NASDAQ,2026-08-01
+JPM,JPMorgan Chase & Co.,Financials,NYSE,2026-08-01
+XOM,Exxon Mobil Corp.,Energy,NYSE,2026-08-01
+JNJ,Johnson & Johnson,Health Care,NYSE,2026-08-01

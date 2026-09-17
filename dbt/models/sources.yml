@@ -1,0 +1,34 @@
+version: 2
+
+sources:
+  - name: bronze
+    description: "Raw data landed from external APIs, partitioned by ingestion date"
+    schema: main
+    tables:
+      - name: daily_prices_raw
+        description: "Raw Alpha Vantage daily price data"
+        meta:
+          external_location: "read_parquet('../data/bronze/daily_prices_raw/**/*.parquet', hive_partitioning=1)"
+        columns:
+          - name: ticker
+            description: "Stock ticker symbol"
+          - name: raw_payload
+            description: "Complete API response as JSON"
+          - name: ingested_at
+            description: "UTC timestamp when data was ingested"
+          - name: source
+            description: "Source system (alpha_vantage)"
+
+      - name: fred_series_raw
+        description: "Raw FRED macroeconomic indicator data"
+        meta:
+          external_location: "read_parquet('../data/bronze/fred_series_raw/**/*.parquet', hive_partitioning=1)"
+        columns:
+          - name: series_id
+            description: "FRED series identifier"
+          - name: raw_payload
+            description: "Complete API response as JSON"
+          - name: ingested_at
+            description: "UTC timestamp when data was ingested"
+          - name: source
+            description: "Source system (fred)"
