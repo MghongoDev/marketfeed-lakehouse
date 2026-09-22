@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MarketFeed Lakehouse · Medallion Flow</title>
+<style>
+  :root {
+    --base: #0a0a0a;
+    --surface: #141414;
+    --surface-2: #1a1a1a;
+    --text: #f0ede8;
+    --muted: rgba(240, 237, 232, 0.45);
+    --faint: rgba(240, 237, 232, 0.28);
+    --line: rgba(240, 237, 232, 0.07);
+    --teal: #00d4aa;
+    --bronze: #c08552;
+    --silver: #9fb0bd;
+    --gold: #d4a853;
+    --up: #00d4aa;
+    --down: #e57373;
+    --mono: "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    --header: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--base);
+    color: var(--text);
+    font-family: var(--mono);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 24px;
+  }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    max-width: 1440px;
+    width: 100%;
+  }
+  body.mode-carousel .board { grid-template-columns: 1fr; max-width: 560px; }
+  body.mode-carousel .panel { display: none; }
+  body.mode-carousel .panel.active { display: flex; animation: panel-in 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
+  @keyframes panel-in {
+    from { opacity: 0; transform: translateX(24px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  /* ============ PANEL ============ */
+  .panel {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    min-height: 520px;
+  }
+  .panel::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .p-bronze::before { background: linear-gradient(90deg, var(--bronze), transparent 70%); }
+  .p-silver::before { background: linear-gradient(90deg, var(--silver), transparent 70%); }
+  .p-gold::before   { background: linear-gradient(90deg, var(--gold), transparent 70%); }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 24px 24px 0 24px;
+  }
+
+  .medallion {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .med-bronze { background: #2b1c10; color: var(--bronze); border: 1.5px solid var(--bronze); }
+  .med-silver { background: #1a2026; color: var(--silver); border: 1.5px solid var(--silver); }
+  .med-gold   { background: #2b2210; color: var(--gold);   border: 1.5px solid var(--gold); }
+
+  .stage-name {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    font-family: var(--header);
+  }
+  .stage-name span { color: var(--muted); font-weight: 400; }
+
+  .stage-title {
+    padding: 4px 24px 20px 72px;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    line-height: 1.5;
+  }
+
+  /* ============ JSON ============ */
+  .code {
+    padding: 20px 24px;
+    font-size: 11.5px;
+    line-height: 1.72;
+    white-space: pre;
+    overflow-x: auto;
+    border-top: 1px solid var(--line);
+    flex: 1;
+  }
+  .p { color: var(--muted); }
+  .s { color: var(--teal); }
+  .n { color: #e8b4b8; }
+
+  .raw-note, .sql-note {
+    padding: 0 24px 20px;
+    font-size: 10px;
+    color: var(--faint);
+    letter-spacing: 0.03em;
+  }
+  .raw-note code, .sql-note code { color: var(--muted); }
+  .sql-note { padding-top: 12px; }
+
+  /* ============ TABLE ============ */
+  .table-wrap { flex: 1; display: flex; flex-direction: column; }
+  table {
+    width: calc(100% - 48px);
+    margin: 4px 24px 0;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  th {
+    text-align: left;
+    padding: 8px 12px;
+    color: var(--muted);
+    font-weight: 400;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-bottom: 1px solid rgba(240, 237, 232, 0.12);
+  }
+  td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  tr:last-child td { border-bottom: none; }
+  .typ { color: var(--silver); font-size: 11px; }
+  .val { color: var(--text); text-align: right; }
+  th.val-h { text-align: right; }
+
+  .row-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 24px 20px;
+    font-size: 10px;
+    color: var(--faint);
+    letter-spacing: 0.03em;
+  }
+  .row-note b { color: var(--silver); font-weight: 600; }
+
+  /* ============ CHART ============ */
+  .chart {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    gap: 9px;
+    padding: 26px 24px 8px;
+    border-top: 1px solid var(--line);
+  }
+  .bar-group { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; height: 100%; }
+  .bar { border-radius: 2px 2px 0 0; width: 100%; }
+  .bar-label { font-size: 9.5px; color: var(--faint); text-align: center; letter-spacing: 0.04em; }
+  .bar-vol { border-radius: 0; width: 100%; }
+
+  .metrics { padding: 8px 24px 4px; }
+  .metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 7px 0;
+    border-top: 1px solid var(--line);
+  }
+  .metric-label { font-size: 10px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .metric-value { font-size: 13px; color: var(--text); }
+  .metric-value.up { color: var(--up); }
+  .metric-value.down { color: var(--down); }
+
+  /* ============ FOOTER ============ */
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-top: 1px solid var(--line);
+  }
+  .flow { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; transition: opacity 0.3s; }
+  .dot-bronze { background: var(--bronze); }
+  .dot-silver { background: var(--silver); }
+  .dot-gold   { background: var(--gold); }
+  .dot-arrow { color: var(--faint); font-size: 9px; }
+  .flow-label { font-size: 10px; color: var(--faint); letter-spacing: 0.05em; margin-left: 8px; }
+  .page-num { font-size: 10px; color: var(--faint); letter-spacing: 0.05em; }
+
+  /* ============ CHROME ============ */
+  .topbar {
+    max-width: 1440px;
+    width: 100%;
+    margin: 0 auto;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(180deg, rgba(10,10,10,0.95) 60%, transparent);
+    z-index: 10;
+    pointer-events: none;
+  }
+  .topbar > * { pointer-events: auto; }
+  .brand {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .brand b { color: var(--text); font-weight: 600; }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(20, 20, 20, 0.85);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 6px;
+    backdrop-filter: blur(8px);
+  }
+  .ctl {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    background: transparent;
+    border: none;
+    border-radius: 5px;
+    padding: 7px 12px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: background 0.2s, color 0.2s;
+    white-space: nowrap;
+  }
+  .ctl:hover { color: var(--text); background: rgba(240, 237, 232, 0.06); }
+  .ctl.on { background: rgba(0, 212, 170, 0.14); color: var(--teal); }
+  .ctl-sep { width: 1px; height: 18px; background: var(--line); }
+
+  body.mode-carousel .ctl-tabs { display: flex; }
+  .ctl-tabs { display: none; align-items: center; gap: 2px; margin-left: 4px; }
+  .tab {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    background: transparent;
+    border: none;
+    border-radius: 5px;
+    padding: 7px 10px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: background 0.2s, color 0.2s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--text); background: rgba(240, 237, 232, 0.08); }
+  .tab.t-bronze.active { color: var(--bronze); }
+  .tab.t-silver.active { color: var(--silver); }
+  .tab.t-gold.active   { color: var(--gold); }
+
+  .progress {
+    position: fixed;
+    bottom: 0; left: 0; height: 2px;
+    background: var(--teal);
+    width: 0%;
+    z-index: 11;
+    transition: width 0.2s linear;
+  }
+
+  .hint {
+    position: fixed;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: var(--faint);
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    z-index: 10;
+  }
+  body.mode-flow .hint { display: none; }
+
+  /* ============ CAROUSEL-ONLY NAV ============ */
+  .car-nav { display: none; }
+  body.mode-carousel .car-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 560px;
+    width: 100%;
+    margin: 20px auto 0;
+  }
+  .navbtn {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 18px;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .navbtn:hover { color: var(--text); border-color: rgba(240, 237, 232, 0.2); }
+  .navbtn:disabled { opacity: 0.25; cursor: default; }
+  .navbtn:disabled:hover { color: var(--muted); border-color: var(--line); }
+  .car-dots { display: flex; gap: 10px; }
+  .car-dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: rgba(240, 237, 232, 0.15);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+    padding: 0; border: none;
+  }
+  .car-dot.active { transform: scale(1.25); }
+  .car-dot.d-bronze.active { background: var(--bronze); }
+  .car-dot.d-silver.active { background: var(--silver); }
+  .car-dot.d-gold.active   { background: var(--gold); }
+
+  @media (max-width: 1100px) {
+    .board { grid-template-columns: 1fr !important; max-width: 560px; }
+    body:not(.mode-carousel) .panel { display: flex; }
+    .ctl-text { display: none; }
+  }
+</style>
+</head>
+<body class="mode-flow">
+
+<div class="topbar">
+  <div class="brand"><b>MarketFeed</b> Lakehouse · medallion flow</div>
+  <div class="controls">
+    <button class="ctl ctl-mode on" id="btn-flow">Flow</button>
+    <button class="ctl ctl-mode" id="btn-carousel">Carousel</button>
+    <div class="ctl-sep"></div>
+    <button class="ctl" id="btn-autoplay" title="Autoplay (cycles every 4s)">▶ Auto</button>
+    <div class="ctl-tabs" id="tabs">
+      <button class="tab t-bronze active" data-stage="0">Bronze</button>
+      <button class="tab t-silver" data-stage="1">Silver</button>
+      <button class="tab t-gold" data-stage="2">Gold</button>
+    </div>
+  </div>
+</div>
+
+<div class="board" id="board">
+
+  <!-- ══════════ PANEL 1 · BRONZE ══════════ -->
+  <div class="panel p-bronze" data-stage="0">
+    <div class="panel-header">
+      <div class="medallion med-bronze">B</div>
+      <div class="stage-name">Bronze<span> · raw</span></div>
+    </div>
+    <div class="stage-title">One row per API response, landed as-is. Never transformed.</div>
+
+    <div class="code"><span class="p">raw_payload</span> · <span class="p">"Meta Data"</span> · <span class="p">"2. Symbol"</span>: <span class="s">"AAPL"</span>
+<span class="p">"Time Series (Daily)"</span> · <span class="p">"2026-09-17"</span>:
+  <span class="s">"1. open"</span>:   <span class="n">"256.7400"</span>,
+  <span class="s">"2. high"</span>:   <span class="n">"258.9100"</span>,
+  <span class="s">"3. low"</span>:    <span class="n">"255.3200"</span>,
+  <span class="s">"4. close"</span>:  <span class="n">"258.1500"</span>,
+  <span class="s">"5. volume"</span>: <span class="n">"41863200"</span></div>
+
+    <div class="raw-note">partitioned by <code>ingest_date=2026-09-17</code> · string-typed · append-only</div>
+
+    <div class="footer">
+      <div class="flow">
+        <div class="dot dot-bronze"></div><div class="dot-arrow">●</div>
+        <div class="dot dot-silver" data-dot="1"></div><div class="dot-arrow">●</div>
+        <div class="dot dot-gold" data-dot="2"></div>
+        <div class="flow-label">bronze → silver → gold</div>
+      </div>
+      <div class="page-num">01 / 03</div>
+    </div>
+  </div>
+
+  <!-- ══════════ PANEL 2 · SILVER ══════════ -->
+  <div class="panel p-silver" data-stage="1">
+    <div class="panel-header">
+      <div class="medallion med-silver">S</div>
+      <div class="stage-name">Silver<span> · typed</span></div>
+    </div>
+    <div class="stage-title">One row per (ticker, trade_date). Parsed, deduped, typed.</div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>column</th><th>type</th><th class="val-h">value</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>ticker</td><td class="typ">VARCHAR</td><td class="val">'AAPL'</td></tr>
+          <tr><td>trade_date</td><td class="typ">DATE</td><td class="val">2026-09-17</td></tr>
+          <tr><td>close_price</td><td class="typ">DECIMAL(18,4)</td><td class="val">258.1500</td></tr>
+          <tr><td>volume</td><td class="typ">BIGINT</td><td class="val">41,863,200</td></tr>
+          <tr><td>last_updated_at</td><td class="typ">TIMESTAMP</td><td class="val">16:05:12 UTC</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="row-note">dedup: <b>row_number() over (ticker, trade_date) order by ingested_at desc</b> keeps the latest pull</div>
+
+    <div class="footer">
+      <div class="flow">
+        <div class="dot dot-bronze" data-dot="0"></div><div class="dot-arrow">●</div>
+        <div class="dot dot-silver"></div><div class="dot-arrow">●</div>
+        <div class="dot dot-gold" data-dot="2"></div>
+        <div class="flow-label">bronze → silver → gold</div>
+      </div>
+      <div class="page-num">02 / 03</div>
+    </div>
+  </div>
+
+  <!-- ══════════ PANEL 3 · GOLD ══════════ -->
+  <div class="panel p-gold" data-stage="2">
+    <div class="panel-header">
+      <div class="medallion med-gold">G</div>
+      <div class="stage-name">Gold<span> · metric</span></div>
+    </div>
+    <div class="stage-title">AAPL · 30-day window of daily closes and volumes</div>
+
+    <div class="chart">
+      <div class="bar-group"><div class="bar bar-vol" style="height:18%; background: rgba(240,237,232,0.12);"></div><div class="bar" style="height:82%; background: #e8ddd0; opacity: 0.35;"></div><div class="bar-label">−29d</div></div>
+      <div class="bar-group"><div class="bar bar-vol" style="height:24%; background: rgba(240,237,232,0.12);"></div><div class="bar" style="height:70%; background: #e8ddd0; opacity: 0.35;"></div><div class="bar-label"></div></div>
+      <div class="bar-group"><div class="bar bar-vol" style="height:30%; background: rgba(240,237,232,0.12);"></div><div class="bar" style="height:76%; background: #e8ddd0; opacity: 0.35;"></div><div class="bar-label"></div></div>
+      <div class="bar-group"><div class="bar bar-vol" style="height:22%; background: rgba(240,237,232,0.12);"></div><div class="bar" style="height:64%; background: #e8ddd0; opacity: 0.35;"></div><div class="bar-label"></div></div>
+      <div class="bar-group"><div class="bar bar-vol" style="height:28%; background: rgba(240,237,232,0.12);"></div><div class="bar" style="height:72%; background: #e8ddd0; opacity: 0.35;"></div><div class="bar-label"></div></div>
+      <div class="bar-group"><div class="bar bar-vol" style="height:34%; background: rgba(240,237,232,0.12);"></div><div class="bar" style="height:78%; background: #e8ddd0; opacity: 0.35;"></div><div class="bar-label"></div></div>
+      <div class="bar-group"><div class="bar bar-vol" style="height:26%; background: rgba(240,237,232,0.12);"></div><div class="bar" style="height:74%; background: #e8ddd0; opacity: 0.35;"></div><div class="bar-label"></div></div>
+      <div class="bar-group"><div class="bar bar-vol" style="height:31%; background: rgba(240,237,232,0.22);"></div><div class="bar" style="height:88%; background: #e8ddd0; opacity: 0.6;"></div><div class="bar-label">−7d</div></div>
+      <div class="bar-group"><div class="bar bar-vol" style="height:27%; background: rgba(240,237,232,0.12);"></div><div class="bar" style="height:80%; background: #e8ddd0; opacity: 0.35;"></div><div class="bar-label"></div></div>
+      <div class="bar-group"><div class="bar bar-vol" style="height:29%; background: rgba(240,237,232,0.12);"></div><div class="bar" style="height:84%; background: #e8ddd0; opacity: 0.35;"></div><div class="bar-label">today−1</div></div>
+      <div class="bar-group"><div class="bar bar-vol" style="height:42%; background: rgba(212,168,83,0.35);"></div><div class="bar" style="height:100%; background: var(--gold);"></div><div class="bar-label" style="color: var(--gold);">09-17</div></div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric-row"><span class="metric-label">close</span><span class="metric-value">258.15</span></div>
+      <div class="metric-row"><span class="metric-label">ma_7d</span><span class="metric-value">254.72</span></div>
+      <div class="metric-row"><span class="metric-label">ma_30d</span><span class="metric-value">247.83</span></div>
+      <div class="metric-row"><span class="metric-label">volatility_30d</span><span class="metric-value">4.61</span></div>
+      <div class="metric-row"><span class="metric-label">daily_return_pct</span><span class="metric-value up">+0.84%</span></div>
+    </div>
+
+    <div class="sql-note">from <code>daily_price_summary</code> · window functions over silver</div>
+
+    <div class="footer">
+      <div class="flow">
+        <div class="dot dot-bronze" data-dot="0"></div><div class="dot-arrow">●</div>
+        <div class="dot dot-silver" data-dot="1"></div><div class="dot-arrow">●</div>
+        <div class="dot dot-gold"></div>
+        <div class="flow-label">bronze → silver → gold</div>
+      </div>
+      <div class="page-num">03 / 03</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="car-nav">
+  <button class="navbtn" id="btn-prev">← Prev</button>
+  <div class="car-dots" id="car-dots">
+    <button class="car-dot d-bronze active" data-stage="0" aria-label="Bronze"></button>
+    <button class="car-dot d-silver" data-stage="1" aria-label="Silver"></button>
+    <button class="car-dot d-gold" data-stage="2" aria-label="Gold"></button>
+  </div>
+  <button class="navbtn" id="btn-next">Next →</button>
+</div>
+
+<div class="progress" id="progress"></div>
+<div class="hint">← → to navigate · space toggles autoplay</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var body = document.body;
+  var panels = Array.prototype.slice.call(document.querySelectorAll('.panel'));
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('#tabs .tab'));
+  var carDots = Array.prototype.slice.call(document.querySelectorAll('.car-dot'));
+  var btnFlow = document.getElementById('btn-flow');
+  var btnCarousel = document.getElementById('btn-carousel');
+  var btnAuto = document.getElementById('btn-autoplay');
+  var btnPrev = document.getElementById('btn-prev');
+  var btnNext = document.getElementById('btn-next');
+  var progress = document.getElementById('progress');
+
+  var current = 0;
+  var progressTimer = null;
+  var advanceTimer = null;
+  var cycleStart = 0;
+  var AUTO_MS = 4000;
+
+  function clampIndex(i) { return Math.max(0, Math.min(panels.length - 1, i)); }
+
+  function render() {
+    var isCarousel = body.classList.contains('mode-carousel');
+
+    panels.forEach(function (panel, idx) {
+      panel.classList.toggle('active', !isCarousel || idx === current);
+    });
+    tabs.forEach(function (tab, idx) {
+      tab.classList.toggle('active', idx === current);
+    });
+    carDots.forEach(function (dot, idx) {
+      dot.classList.toggle('active', idx === current);
+    });
+
+    btnPrev.disabled = isCarousel && current === 0;
+    btnNext.disabled = isCarousel && current === panels.length - 1;
+
+    // In carousel mode, dim later-stage dots inside each panel's flow indicator
+    panels.forEach(function (panel, idx) {
+      var dots = panel.querySelectorAll('.flow .dot');
+      dots.forEach(function (d, di) {
+        var dim = isCarousel && di > idx;
+        d.style.opacity = dim ? '0.3' : '1';
+      });
+    });
+
+    // Sync UI states
+    var inCarousel = body.classList.contains('mode-carousel');
+    btnFlow.classList.toggle('on', !inCarousel);
+    btnCarousel.classList.toggle('on', inCarousel);
+    document.getElementById('tabs').style.display = inCarousel ? 'flex' : 'none';
+  }
+
+  function goTo(i) {
+    current = clampIndex(i);
+    if (advanceTimer) cycleStart = Date.now();  // restart the progress bar on manual nav too
+    render();
+  }
+
+  function setMode(mode) {
+    body.classList.toggle('mode-carousel', mode === 'carousel');
+    body.classList.toggle('mode-flow', mode === 'flow');
+    if (mode === 'carousel') {
+      startAuto();             // autoplay on by default in carousel mode
+    } else {
+      stopAuto();
+    }
+    render();
+  }
+
+  function tick() { goTo((current + 1) % panels.length); }
+
+  function startAuto() {
+    stopAuto();
+    cycleStart = Date.now();
+    progressTimer = setInterval(function () {
+      var elapsed = Date.now() - cycleStart;
+      progress.style.width = Math.min(100, (elapsed / AUTO_MS) * 100) + '%';
+    }, 50);
+    advanceTimer = setInterval(tick, AUTO_MS);
+    btnAuto.classList.add('on');
+    btnAuto.textContent = '❚❚ Auto';
+  }
+
+  function stopAuto() {
+    if (progressTimer) { clearInterval(progressTimer); progressTimer = null; }
+    if (advanceTimer) { clearInterval(advanceTimer); advanceTimer = null; }
+    progress.style.width = '0%';
+    btnAuto.classList.remove('on');
+    btnAuto.textContent = '▶ Auto';
+  }
+
+  function toggleAuto() {
+    if (autoTimer) { stopAuto(); } else { startAuto(); }
+  }
+
+  // Wire controls
+  btnFlow.addEventListener('click', function () { setMode('flow'); });
+  btnCarousel.addEventListener('click', function () { setMode('carousel'); });
+  btnAuto.addEventListener('click', toggleAuto);
+  btnPrev.addEventListener('click', function () { goTo(current - 1); stopAuto(); });
+  btnNext.addEventListener('click', function () { goTo(current + 1); stopAuto(); });
+
+  tabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      goTo(parseInt(tab.getAttribute('data-stage'), 10));
+      stopAuto();
+    });
+  });
+
+  carDots.forEach(function (dot) {
+    dot.addEventListener('click', function () {
+      goTo(parseInt(dot.getAttribute('data-stage'), 10));
+      stopAuto();
+    });
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowLeft')  { goTo(current - 1); stopAuto(); }
+    if (e.key === 'ArrowRight') { goTo(current + 1); stopAuto(); }
+    if (e.key === ' ') {
+      e.preventDefault();
+      toggleAuto();
+    }
+  });
+
+  // Touch swipe
+  var touchX = null;
+  document.addEventListener('touchstart', function (e) { touchX = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', function (e) {
+    if (touchX === null) return;
+    var dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 50) { goTo(current + (dx < 0 ? 1 : -1)); stopAuto(); }
+    touchX = null;
+  }, { passive: true });
+
+  // Pause autoplay when tab hidden
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden && advanceTimer) {
+      stopAuto();
+    }
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>
