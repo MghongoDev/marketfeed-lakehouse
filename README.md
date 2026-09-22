@@ -32,6 +32,18 @@ A production-grade medallion-architecture data lakehouse demonstrating modern da
   - `sector_performance` - Daily aggregated returns by sector (point-in-time-correct joins)
   - `macro_market_correlation` - Market returns with macro indicators (as-of joins)
 
+### The Medallion Flow, One Record at a Time
+
+Follow a single AAPL record through the pipeline:
+
+![Medallion flow: one record from raw JSON in bronze to a typed row in silver to an aggregated metric in gold](docs/img/medallion-carousel.png)
+
+- **Bronze:** the raw Alpha Vantage JSON payload lands as-is — string-typed, append-only, partitioned by `ingest_date`
+- **Silver:** parsed and deduplicated into a typed row in `stg_stock_prices` (one row per `(ticker, trade_date)`)
+- **Gold:** aggregated with window functions into `daily_price_summary` — 7d/30d moving averages, 30d volatility, daily return
+
+An interactive version lives at [docs/img/medallion-carousel.html](docs/img/medallion-carousel.html) — open it in a browser to step through the stages with keyboard or autoplay.
+
 ## Data Sources
 
 This lakehouse ingests data from the following external and internal sources:
