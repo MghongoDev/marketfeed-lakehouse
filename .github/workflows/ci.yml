@@ -81,6 +81,31 @@ jobs:
         working-directory: dbt
         run: dbt test
 
+  data-quality:
+    name: Data Quality Freshness Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas==2.2.3 pyarrow==25.0.1 duckdb
+
+      - name: Generate sample bronze data
+        run: |
+          python scripts/seed_ci_fixtures.py
+
+      - name: Run Great Expectations freshness gate
+        run: |
+          python scripts/run_freshness_gate.py --bronze-path data/bronze --max-days-stale 3
+
   sql-lint:
     name: Lint SQL Files
     runs-on: ubuntu-latest
