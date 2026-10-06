@@ -165,7 +165,8 @@ GitHub Actions pipeline automatically:
 2. Generates sample bronze fixtures
 3. Builds dbt models (silver → gold)
 4. Runs all dbt tests
-5. Lints SQL with sqlfluff
+5. Runs the Great Expectations freshness gate as a standalone data-quality job (`data-quality`), failing when bronze is stale or missing
+6. Lints SQL with sqlfluff
 
 See `.github/workflows/ci.yml` for details.
 
