@@ -32,3 +32,6 @@ sqlfluff-templater-dbt==3.2.5
 # MinIO/S3 client
 boto3==1.35.20
 minio==7.2.9
+
+# Architecture diagram generation (requires the Graphviz system package)
+diagrams==0.24.4
