@@ -4,22 +4,9 @@ A production-grade medallion-architecture data lakehouse demonstrating modern da
 
 ## Architecture
 
-```
-┌─────────────┐     ┌──────────────┐     ┌─────────────────────────────────┐
-│ External APIs│───▶│  Airflow DAGs │───▶│         Lakehouse Storage         │
-│ Alpha Vantage│     │  (Python      │     │                                   │
-│ FRED         │     │   ingestion)  │     │  bronze/  →  silver/  →  gold/   │
-└─────────────┘     └──────────────┘     │  (raw)       (cleaned, (marts,   │
-                                           │              SCD2)     BI-ready) │
-                                           └─────────────────────────────────┘
-                                                    │              │
-                                                    ▼              ▼
-                                                DuckDB query   dbt models
-                                                    │
-                                                    ▼
-                                          Data quality gates
-                                          (dbt tests + Great Expectations)
-```
+![MarketFeed Lakehouse architecture: external APIs flow through Airflow-orchestrated ingestion, bronze Parquet, dbt transformations, and DuckDB for SQL consumers](docs/img/architecture.svg)
+
+Regenerate the diagram with `python scripts/generate_architecture_diagram.py` (requires Graphviz).
 
 ### Medallion Layers
 
